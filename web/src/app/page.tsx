@@ -20,6 +20,26 @@ const WalletBar = dynamic(() => import("../components/WalletBar"), {
 });
 
 const Page: React.FC = () => {
+  //declare hooks
+  const [selectedContract, setSelectedContract] = useState(
+    "0x019eaa190f47d499c6ff6e9688f58351bde9b60acf57fb687e7da94c496f28c6"
+  ); // default sepolia contract
+  const [recipient, setRecipient] = useState<string>("");
+  const [transferAmount, setTransferAmount] = useState<number>(0);
+
+  const contractOptions = [
+    {
+      value:
+        "0x019eaa190f47d499c6ff6e9688f58351bde9b60acf57fb687e7da94c496f28c6",
+      label: "Sepolia",
+    },
+    {
+      value:
+        "0x012955589b6ab65689fc12949176c4d2bf696548dc38e87f224651153b7d472a",
+      label: "Mainnet",
+    },
+  ];
+
   // Step 1 --> Read the latest block -- Start
   const {
     data: blockNumberData,
@@ -47,10 +67,12 @@ const Page: React.FC = () => {
   // Step 2 --> Read your balance -- End
 
   // Step 3 --> Read from a contract -- Start
-  const contractAddress = 
-    "0x019eaa190f47d499c6ff6e9688f58351bde9b60acf57fb687e7da94c496f28c6";
 
-  // Read balance_of
+  const handleSelectChange = (event: any) => {
+    setSelectedContract(event.target.value);
+  };
+
+  // balance_of
   const {
     data: readData,
     refetch: dataRefetch,
@@ -61,11 +83,11 @@ const Page: React.FC = () => {
     functionName: "balance_of",
     args: [userAddress ? userAddress : "0x0"],
     abi: contractAbi,
-    address: contractAddress,
+    address: selectedContract,
     watch: true,
   });
 
-  // Read total_supply
+  // total_supply
   const {
     data: readTotalSupply,
     refetch: totalSupplyRefetch,
@@ -75,7 +97,7 @@ const Page: React.FC = () => {
   } = useContractRead({
     functionName: "total_supply",
     abi: contractAbi,
-    address: contractAddress,
+    address: selectedContract,
     watch: true,
   });
 
@@ -92,7 +114,7 @@ const Page: React.FC = () => {
   };
   const { contract } = useContract({
     abi: contractAbi,
-    address: contractAddress,
+    address: selectedContract,
   });
 
   const calls = useMemo(() => {
@@ -162,9 +184,6 @@ const Page: React.FC = () => {
     return "Send";
   };
 
-  const [recipient, setRecipient] = useState<string>("");
-  const [transferAmount, setTransferAmount] = useState<number>(0);
-
   const transferCalls = useMemo(() => {
     if (!contract || !recipient || !transferAmount) return [];
     return contract.populateTransaction["transfer"](recipient, {
@@ -202,8 +221,20 @@ const Page: React.FC = () => {
       <Head>
         <title>Frontend Workshop</title>
       </Head>
+
       <div className="flex flex-row mb-4">
         <WalletBar />
+      </div>
+
+      <div>
+        <label htmlFor="contract-select">Choose a contract network:</label>
+        <select id="contract-select" onChange={handleSelectChange}>
+          {contractOptions.map((option, index) => (
+            <option key={index} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Step 1 --> Read the latest block -- Start */}
@@ -315,7 +346,6 @@ const Page: React.FC = () => {
           className="block w-full px-3 py-2 text-sm leading-6 border-black focus:outline-none focus:border-yellow-300"
           placeholder="Recipient Address"
         />
-
         <label
           htmlFor="transferAmount"
           className="block text-sm font-medium leading-6 text-gray-900 mt-2"
@@ -330,7 +360,6 @@ const Page: React.FC = () => {
           className="block w-full px-3 py-2 text-sm leading-6 border-black focus:outline-none focus:border-yellow-300"
           placeholder="Amount"
         />
-
         <div className="flex justify-center pt-4">
           <button
             type="submit"
@@ -344,7 +373,6 @@ const Page: React.FC = () => {
             {buttonContent()}
           </button>
         </div>
-
         {transferWriteData?.transaction_hash && (
           <a
             href={explorer.transaction(transferWriteData?.transaction_hash)}
@@ -356,7 +384,6 @@ const Page: React.FC = () => {
           </a>
         )}
       </form>
-
       {/* Step 4 --> Write to a contract -- End */}
     </div>
   );
